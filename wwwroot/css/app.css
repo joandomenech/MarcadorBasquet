@@ -263,6 +263,40 @@ button {
     pointer-events: none;
 }
 
+.update-banner {
+    position: fixed;
+    left: 50%;
+    top: max(12px, env(safe-area-inset-top));
+    z-index: 30;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100vw - 24px);
+    padding: 8px 8px 8px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.9);
+    animation: drop 220ms ease-out;
+}
+
+.update-banner button {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-weight: 800;
+    color: #0b0d12;
+    background: #ff7a1a;
+}
+
+.update-banner button:disabled { opacity: 0.6; }
+
+@keyframes drop { from { transform: translate(-50%, -16px); opacity: 0; } }
+
 /* ---------- Fulls (diàlegs) ---------- */
 
 .overlay {

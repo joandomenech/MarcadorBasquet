@@ -110,7 +110,59 @@
         return new File([bytes], name, { type: "image/png" });
     }
 
+    // ---------- Actualitzacions de l'app ----------
+
+    function showUpdateBanner(worker) {
+        if (document.getElementById("update-banner")) return;
+        const bar = document.createElement("div");
+        bar.id = "update-banner";
+        bar.className = "update-banner";
+        bar.setAttribute("role", "status");
+        bar.innerHTML = '<span>Nova versió disponible</span><button type="button">Actualitza</button>';
+        bar.querySelector("button").addEventListener("click", () => {
+            bar.querySelector("button").disabled = true;
+            worker.postMessage("skipWaiting");
+        });
+        document.body.appendChild(bar);
+    }
+
+    function watchForUpdates(reg) {
+        // Una versió nova ja descarregada i esperant (p. ex. d'una obertura anterior)
+        if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg.waiting);
+
+        reg.addEventListener("updatefound", () => {
+            const worker = reg.installing;
+            worker?.addEventListener("statechange", () => {
+                // "installed" amb un controlador actiu = hi ha una versió anterior funcionant
+                if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner(worker);
+            });
+        });
+
+        // A l'iPhone l'app torna del segon pla sense recarregar-se: en tornar-hi, comprova si n'hi ha de nova.
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") reg.update().catch(() => { });
+        });
+    }
+
+    function registerServiceWorker() {
+        if (!("serviceWorker" in navigator)) return;
+
+        let reloading = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+            // La versió nova ha pres el control: recarreguem una sola vegada.
+            if (reloading) return;
+            reloading = true;
+            location.reload();
+        });
+
+        navigator.serviceWorker.register("service-worker.js", { updateViaCache: "none" })
+            .then(watchForUpdates)
+            .catch(() => { });
+    }
+
     window.marcador = {
+        registerServiceWorker,
+
         vibrate(ms) {
             try { navigator.vibrate?.(ms); } catch { }
         },
