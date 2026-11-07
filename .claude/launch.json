@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "marcador",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5044
+    }
+  ]
+}

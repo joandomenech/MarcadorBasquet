@@ -1,0 +1,29 @@
+<section class="team" style="--team:@Team.Color">
+    <button class="team-name" @onclick="OnEdit">@Team.Name</button>
+
+    <button class="score" @onclick="OnEdit" aria-label="@($"{Team.Name}: {Team.Score} punts. Toca per ajustar")">
+        <span class="score-value" @key="@($"s{Team.Score}")">@Team.Score</span>
+        @if (Flash is int f)
+        {
+            <span class="flash @(f < 0 ? "neg" : "")" @key="@($"f{FlashKey}")">@(f > 0 ? "+" : "")@f</span>
+        }
+    </button>
+
+    <div class="actions">
+        <button class="btn btn-minus" aria-label="Resta 1 punt" @onclick="() => OnAdd.InvokeAsync(-1)">−1</button>
+        <button class="btn" aria-label="Suma 1 punt" @onclick="() => OnAdd.InvokeAsync(1)">+1</button>
+        <button class="btn" aria-label="Suma 2 punts" @onclick="() => OnAdd.InvokeAsync(2)">+2</button>
+        <button class="btn btn-strong" aria-label="Suma 3 punts" @onclick="() => OnAdd.InvokeAsync(3)">+3</button>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Team Team { get; set; } = default!;
+
+    /// <summary>Darrer canvi d'aquest equip per mostrar-lo breument (+2, −1...).</summary>
+    [Parameter] public int? Flash { get; set; }
+
+    [Parameter] public int FlashKey { get; set; }
+    [Parameter] public EventCallback<int> OnAdd { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+}

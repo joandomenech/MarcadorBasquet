@@ -1,0 +1,50 @@
+# Compila l'app i la publica a GitHub Pages cada vegada que es puja codi a la branca main.
+name: Publica a GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # permet llançar-la a mà des de la pestanya Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # GitHub Pages serveix l'app a /<nom-del-repositori>/. S'ha de canviar
+      # abans de publicar perquè el service worker (mode offline) quadri.
+      - name: Ajusta el base href al nom del repositori
+        run: |
+          sed -i 's|<base href="/" />|<base href="/${{ github.event.repository.name }}/" />|' wwwroot/index.html
+          grep -n '<base href' wwwroot/index.html
+
+      - name: Publica
+        run: dotnet publish MarcadorBasquet.csproj -c Release -o publish
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,257 @@
+﻿@page "/"
+@inject GameService Game
+@inject IJSRuntime JS
+
+<PageTitle>Marcador Bàsquet</PageTitle>
+
+@if (loaded)
+{
+    <main class="board">
+        @Panel(First)
+
+        <nav class="center">
+            <button class="icon-btn" disabled="@(!Game.CanUndo)" @onclick="UndoAsync" aria-label="Desfés l'últim canvi">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
+            </button>
+            <button class="period" @onclick="OpenMenu" aria-label="Període @Game.PeriodLabel. Obre el menú">@Game.PeriodLabel</button>
+            <button class="icon-btn" @onclick="OpenMenu" aria-label="Menú">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+            </button>
+            <button class="icon-btn" @onclick="ShareAsync" aria-label="Comparteix el marcador">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" /></svg>
+            </button>
+        </nav>
+
+        @if (toast is not null)
+        {
+            <div class="toast" @key="toastId" role="status">@toast</div>
+        }
+
+        @Panel(Second)
+    </main>
+
+    @if (editIndex is int ei)
+    {
+        <div class="overlay" @onclick="CloseEditor">
+            <div class="sheet" style="--team:@editColor" @onclick:stopPropagation="true" role="dialog" aria-label="Ajusta l'equip">
+                <h2>Ajusta l'equip</h2>
+
+                <label class="field">
+                    <span>Nom</span>
+                    <input @bind="editName" maxlength="16" autocomplete="off" />
+                </label>
+
+                <div class="field">
+                    <span>Punts</span>
+                    <div class="stepper">
+                        <button class="step" @onclick="() => editScore = Math.Max(0, editScore - 1)" aria-label="Resta 1">−</button>
+                        <input type="number" inputmode="numeric" min="0" max="999" @bind="editScore" aria-label="Punts" />
+                        <button class="step" @onclick="() => editScore = Math.Min(999, editScore + 1)" aria-label="Suma 1">+</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span>Color</span>
+                    <div class="swatches">
+                        @foreach (var c in Palette)
+                        {
+                            <button class="swatch @(c == editColor ? "on" : "")" style="--c:@c" @onclick="() => editColor = c" aria-label="Color @c"></button>
+                        }
+                    </div>
+                </div>
+
+                <div class="sheet-actions">
+                    <button class="btn-ghost" @onclick="CloseEditor">Cancel·la</button>
+                    <button class="btn-primary" @onclick="() => SaveEditorAsync(ei)">Desa</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (menuOpen)
+    {
+        <div class="overlay" @onclick="CloseMenu">
+            <div class="sheet" @onclick:stopPropagation="true" role="dialog" aria-label="Menú">
+                <h2>Partit</h2>
+
+                <div class="field">
+                    <span>Període · partit de @Game.FormatLabel</span>
+                    <div class="stepper">
+                        <button class="step" @onclick="() => Game.ChangePeriodAsync(-1)" aria-label="Període anterior">−</button>
+                        <output>@Game.PeriodLabel</output>
+                        <button class="step" @onclick="() => Game.ChangePeriodAsync(1)" aria-label="Període següent">+</button>
+                    </div>
+                </div>
+
+                <button class="menu-item" @onclick="SwapAsync">⇄ Intercanvia costats</button>
+
+                @if (!confirmReset)
+                {
+                    <button class="menu-item danger" @onclick="() => confirmReset = true">Nou partit</button>
+                }
+                else
+                {
+                    <div class="field new-game">
+                        <span>Nou partit · tot tornarà a 0</span>
+                        <div class="format-choice">
+                            @foreach (var p in new[] { 4, 8 })
+                            {
+                                <button class="format @(p == Game.State.Periods ? "current" : "")" @onclick="() => NewGameAsync(p)">
+                                    <strong>@p parts</strong>
+                                    <small>@(p == 4 ? "Quarts (Q1–Q4)" : "Premini (P1–P8)")</small>
+                                </button>
+                            }
+                        </div>
+                        <button class="btn-ghost cancel-new" @onclick="() => confirmReset = false">Cancel·la</button>
+                    </div>
+                }
+
+                <div class="sheet-actions">
+                    <button class="btn-primary" @onclick="CloseMenu">Fet</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private static readonly string[] Palette =
+        ["#ff7a1a", "#2ec5ff", "#ff3b5c", "#3ddc84", "#a970ff", "#ffd60a", "#f2f4f8"];
+
+    private bool loaded;
+
+    private int First => Game.State.Swapped ? 1 : 0;
+    private int Second => Game.State.Swapped ? 0 : 1;
+
+    // Indicador breu del darrer canvi (+2, −1...)
+    private int? flashTeam;
+    private int flashDelta;
+    private int flashId;
+
+    // Editor d'equip
+    private int? editIndex;
+    private string editName = "";
+    private int editScore;
+    private string editColor = "";
+
+    // Menú
+    private bool menuOpen;
+    private bool confirmReset;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Game.LoadAsync();
+        loaded = true;
+    }
+
+    private RenderFragment Panel(int i) =>
+        @<TeamPanel Team="Game.State.Teams[i]"
+                    Flash="@(flashTeam == i ? flashDelta : null)"
+                    FlashKey="flashId"
+                    OnAdd="p => AddAsync(i, p)"
+                    OnEdit="() => OpenEditor(i)" />;
+
+    private async Task AddAsync(int team, int points)
+    {
+        if (!await Game.AddPointsAsync(team, points)) return;
+        flashTeam = team;
+        flashDelta = points;
+        flashId++;
+        _ = Vibrate(points > 0 ? 12 : 30);
+    }
+
+    private async Task UndoAsync()
+    {
+        await Game.UndoAsync();
+        flashTeam = null;
+        _ = Vibrate(30);
+    }
+
+    private void OpenEditor(int i)
+    {
+        var t = Game.State.Teams[i];
+        editName = t.Name;
+        editScore = t.Score;
+        editColor = t.Color;
+        editIndex = i;
+    }
+
+    private void CloseEditor() => editIndex = null;
+
+    private async Task SaveEditorAsync(int i)
+    {
+        await Game.UpdateTeamAsync(i, editName, editColor);
+        var before = Game.State.Teams[i].Score;
+        if (await Game.SetScoreAsync(i, editScore))
+        {
+            flashTeam = i;
+            flashDelta = Game.State.Teams[i].Score - before;
+            flashId++;
+        }
+        editIndex = null;
+    }
+
+    private void OpenMenu()
+    {
+        confirmReset = false;
+        menuOpen = true;
+    }
+
+    private void CloseMenu() => menuOpen = false;
+
+    private async Task SwapAsync()
+    {
+        await Game.SwapSidesAsync();
+        menuOpen = false;
+    }
+
+    private async Task NewGameAsync(int periods)
+    {
+        await Game.NewGameAsync(periods);
+        flashTeam = null;
+        menuOpen = false;
+    }
+
+    // Avís breu a la part de baix
+    private string? toast;
+    private int toastId;
+
+    private async Task ShareAsync()
+    {
+        var s = Game.State;
+        var home = s.Teams[First];
+        var away = s.Teams[Second];
+        try
+        {
+            var result = await JS.InvokeAsync<string>("marcador.shareScore", new
+            {
+                home = new { name = home.Name, score = home.Score, color = home.Color },
+                away = new { name = away.Name, score = away.Score, color = away.Color },
+                period = Game.ShareLabel
+            });
+            if (result == "downloaded") await ShowToastAsync("Imatge del marcador desada");
+        }
+        catch
+        {
+            await ShowToastAsync("No s'ha pogut compartir");
+        }
+    }
+
+    private async Task ShowToastAsync(string message)
+    {
+        toast = message;
+        var id = ++toastId;
+        StateHasChanged();
+        await Task.Delay(2500);
+        if (id == toastId)
+        {
+            toast = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Vibrate(int ms)
+    {
+        try { await JS.InvokeVoidAsync("marcador.vibrate", ms); } catch { }
+    }
+}
