@@ -54,6 +54,44 @@ button {
         max(10px, env(safe-area-inset-left));
 }
 
+/* ---------- Pista de fons ---------- */
+
+.board { position: relative; isolation: isolate; }
+
+.court {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.court svg { width: 100%; height: 100%; display: block; }
+.court-landscape { display: none !important; }
+
+@media (orientation: landscape) {
+    .court-portrait { display: none !important; }
+    .court-landscape { display: block !important; }
+}
+
+.court-lines {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.28);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.court-lines * { vector-effect: non-scaling-stroke; }
+.court-board { stroke: rgba(255, 255, 255, 0.5); stroke-width: 3; }
+.court-key { opacity: 0.16; }
+.court-three { opacity: 0.05; }
+
+.court-hoop {
+    fill: none;
+    stroke-width: 2.5;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.8;
+}
+
 @media (orientation: landscape) {
     .board {
         grid-template-rows: minmax(0, 1fr);
@@ -75,7 +113,7 @@ button {
     border: 1px solid var(--line);
     background:
         radial-gradient(120% 90% at 50% 0%, var(--team-soft), transparent 65%),
-        var(--panel);
+        rgba(10, 12, 17, 0.35);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     position: relative;
     overflow: hidden;
@@ -124,6 +162,12 @@ button {
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
+    /* L'espaiat negatiu també s'aplica després de l'última xifra: el compensem perquè
+       el número quedi exactament al mig. */
+    padding-right: 0.04em;
+    /* Retalla l'espai de sobre i de sota de la lletra perquè el centre vertical
+       sigui el de les xifres i no el de la línia de text. */
+    text-box: trim-both cap alphabetic;
     font-variant-numeric: tabular-nums;
     color: #fff;
     text-shadow:

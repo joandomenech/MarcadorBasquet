@@ -1,0 +1,73 @@
+@* Fons del tauler: una pista de bàsquet vista des de dalt (28 × 15 m).
+   En vertical, el primer equip té la cistella a dalt; en horitzontal, a l'esquerra.
+   La zona de cada equip es pinta amb el seu color. *@
+
+<div class="court" aria-hidden="true" style="--c1:@FirstColor; --c2:@SecondColor">
+    <svg class="court-portrait" viewBox="0 0 15 28" preserveAspectRatio="xMidYMid slice">
+        @Drawing("p", 6.2)
+    </svg>
+    <svg class="court-landscape" viewBox="0 0 28 15" preserveAspectRatio="xMidYMid slice">
+        <g transform="translate(0 15) rotate(-90)">@Drawing("l", 6.45)</g>
+    </svg>
+</div>
+
+@code {
+    [Parameter] public string FirstColor { get; set; } = "#ff7a1a";
+    [Parameter] public string SecondColor { get; set; } = "#2ec5ff";
+
+    // Mides FIBA en metres, amb la pista en vertical (cistelles a dalt i a baix).
+    private const double W = 15, L = 28;
+    private const double Hoop = 1.575;        // centre de la cistella des de la línia de fons
+    private const double Three = 6.75;        // radi de la línia de 3
+    private const double Corner = 0.9;        // distància de la línia de 3 a la banda
+    private const double KeyW = 4.9, Circle = 1.8;
+
+    private static string F(double v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+
+    // Fins on arriba la línia recta de 3 abans de començar l'arc.
+    private static readonly double CornerLen = Hoop + Math.Sqrt(Three * Three - (W / 2 - Corner) * (W / 2 - Corner));
+
+    // Cada SVG necessita ids propis per als patrons (l'altre està amagat).
+    // keyL: llargada de la zona. La reglamentària és 5,8 m; l'allarguem una mica perquè el
+    // cercle de tirs lliures quedi just darrere del número (en vertical i en horitzontal).
+    private RenderFragment Drawing(string id, double keyL) => @<g>
+        <defs>
+            <pattern id="planks-@id" width="0.75" height="28" patternUnits="userSpaceOnUse">
+                <rect width="0.75" height="28" fill="transparent" />
+                <rect width="0.025" height="28" fill="rgba(0,0,0,0.35)" />
+            </pattern>
+            <radialGradient id="floor-@id" cx="50%" cy="50%" r="70%">
+                <stop offset="0" stop-color="#2a1e14" />
+                <stop offset="1" stop-color="#120d09" />
+            </radialGradient>
+        </defs>
+
+        <rect x="-20" y="-20" width="@F(W + 40)" height="@F(L + 40)" fill="#0d0a07" />
+        <rect width="@F(W)" height="@F(L)" fill="url(#floor-@id)" />
+        <rect width="@F(W)" height="@F(L)" fill="url(#planks-@id)" />
+
+        @Half(0, "var(--c1)", keyL)
+        @Half(1, "var(--c2)", keyL)
+
+        <g class="court-lines">
+            <rect width="@F(W)" height="@F(L)" />
+            <line x1="0" y1="@F(L / 2)" x2="@F(W)" y2="@F(L / 2)" />
+            <circle cx="@F(W / 2)" cy="@F(L / 2)" r="@F(Circle)" />
+        </g>
+    </g>;
+
+    // Mitja pista: i = 0 a dalt, i = 1 a baix (es dibuixa la de dalt i s'emmiralla).
+    private RenderFragment Half(int i, string color, double keyL) => @<g transform="@(i == 0 ? "" : $"translate(0 {F(L)}) scale(1 -1)")">
+        <rect class="court-key" x="@F((W - KeyW) / 2)" y="0" width="@F(KeyW)" height="@F(keyL)" style="fill:@color" />
+        <path class="court-three" style="fill:@color"
+              d="M @F(Corner) 0 V @F(CornerLen) A @F(Three) @F(Three) 0 0 0 @F(W - Corner) @F(CornerLen) V 0 Z" />
+        <g class="court-lines">
+            <rect x="@F((W - KeyW) / 2)" y="0" width="@F(KeyW)" height="@F(keyL)" />
+            <circle cx="@F(W / 2)" cy="@F(keyL)" r="@F(Circle)" />
+            <path d="M @F(Corner) 0 V @F(CornerLen) A @F(Three) @F(Three) 0 0 0 @F(W - Corner) @F(CornerLen) V 0" />
+            <path d="M @F(W / 2 - 1.25) @F(Hoop) A 1.25 1.25 0 0 0 @F(W / 2 + 1.25) @F(Hoop)" />
+            <line x1="@F(W / 2 - 0.9)" y1="1.2" x2="@F(W / 2 + 0.9)" y2="1.2" class="court-board" />
+        </g>
+        <circle class="court-hoop" cx="@F(W / 2)" cy="@F(Hoop)" r="0.23" style="stroke:@color" />
+    </g>;
+}

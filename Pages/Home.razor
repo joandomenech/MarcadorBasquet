@@ -7,6 +7,8 @@
 @if (loaded)
 {
     <main class="board">
+        <Court FirstColor="@Game.State.Teams[First].Color" SecondColor="@Game.State.Teams[Second].Color" />
+
         @Panel(First)
 
         <nav class="center">
