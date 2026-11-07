@@ -78,7 +78,7 @@ public class GameService(IJSRuntime js)
     public async Task UpdateTeamAsync(int team, string name, string color)
     {
         var t = State.Teams[team];
-        t.Name = string.IsNullOrWhiteSpace(name) ? (team == 0 ? "Local" : "Visitant") : name.Trim();
+        t.Name = string.IsNullOrWhiteSpace(name) ? DefaultName(team) : name.Trim();
         t.Color = color;
         await SaveAsync();
     }
@@ -95,11 +95,19 @@ public class GameService(IJSRuntime js)
         await SaveAsync();
     }
 
-    /// <summary>Nou partit amb el format indicat: marcador a zero, es mantenen noms i colors.</summary>
+    private static string DefaultName(int team) => team == 0 ? "Local" : "Visitant";
+    private static string DefaultColor(int team) => team == 0 ? "#ff7a1a" : "#2ec5ff";
+
+    /// <summary>Nou partit amb el format indicat: marcador a zero i equips amb noms i colors per defecte.</summary>
     public async Task NewGameAsync(int periods)
     {
         State.Periods = periods is 4 or 8 ? periods : 4;
-        foreach (var t in State.Teams) t.Score = 0;
+        for (var i = 0; i < State.Teams.Length; i++)
+        {
+            State.Teams[i].Score = 0;
+            State.Teams[i].Name = DefaultName(i);
+            State.Teams[i].Color = DefaultColor(i);
+        }
         State.Period = 1;
         State.History.Clear();
         await SaveAsync();
