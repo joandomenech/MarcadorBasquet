@@ -298,6 +298,14 @@ button {
     user-select: text;
 }
 
+.sheet-cols { display: grid; }
+
+.sheet-cols .col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
 @keyframes fade { from { opacity: 0; } }
 @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
 
@@ -458,6 +466,31 @@ button {
 .btn-primary {
     color: #0b0d12;
     background: var(--team);
+}
+
+/* En horitzontal el mòbil fa poca alçada: el full passa a dues columnes. */
+@media (orientation: landscape) and (max-height: 600px) {
+    .overlay {
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    .sheet {
+        max-width: 680px;
+        padding: 14px 18px 16px;
+    }
+
+    .sheet h2 { margin-bottom: 10px; }
+
+    .sheet-cols {
+        grid-template-columns: 1fr 1fr;
+        column-gap: 20px;
+    }
+
+    .field { margin-bottom: 12px; }
+
+    .sheet-cols .col > :last-child { margin-bottom: 0; }
+    .sheet-cols .col .sheet-actions { margin-top: auto; }
 }
 
 /* ---------- Càrrega i errors de Blazor ---------- */

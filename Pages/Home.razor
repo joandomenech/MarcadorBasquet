@@ -36,33 +36,39 @@
             <div class="sheet" style="--team:@editColor" @onclick:stopPropagation="true" role="dialog" aria-label="Ajusta l'equip">
                 <h2>Ajusta l'equip</h2>
 
-                <label class="field">
-                    <span>Nom</span>
-                    <input @bind="editName" maxlength="16" autocomplete="off" />
-                </label>
+                <div class="sheet-cols">
+                    <div class="col">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input @bind="editName" maxlength="16" autocomplete="off" />
+                        </label>
 
-                <div class="field">
-                    <span>Punts</span>
-                    <div class="stepper">
-                        <button class="step" @onclick="() => editScore = Math.Max(0, editScore - 1)" aria-label="Resta 1">−</button>
-                        <input type="number" inputmode="numeric" min="0" max="999" @bind="editScore" aria-label="Punts" />
-                        <button class="step" @onclick="() => editScore = Math.Min(999, editScore + 1)" aria-label="Suma 1">+</button>
+                        <div class="field">
+                            <span>Punts</span>
+                            <div class="stepper">
+                                <button class="step" @onclick="() => editScore = Math.Max(0, editScore - 1)" aria-label="Resta 1">−</button>
+                                <input type="number" inputmode="numeric" min="0" max="999" @bind="editScore" aria-label="Punts" />
+                                <button class="step" @onclick="() => editScore = Math.Min(999, editScore + 1)" aria-label="Suma 1">+</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="field">
-                    <span>Color</span>
-                    <div class="swatches">
-                        @foreach (var c in Palette)
-                        {
-                            <button class="swatch @(c == editColor ? "on" : "")" style="--c:@c" @onclick="() => editColor = c" aria-label="Color @c"></button>
-                        }
+                    <div class="col">
+                        <div class="field">
+                            <span>Color</span>
+                            <div class="swatches">
+                                @foreach (var c in Palette)
+                                {
+                                    <button class="swatch @(c == editColor ? "on" : "")" style="--c:@c" @onclick="() => editColor = c" aria-label="Color @c"></button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="sheet-actions">
+                            <button class="btn-ghost" @onclick="CloseEditor">Cancel·la</button>
+                            <button class="btn-primary" @onclick="() => SaveEditorAsync(ei)">Desa</button>
+                        </div>
                     </div>
-                </div>
-
-                <div class="sheet-actions">
-                    <button class="btn-ghost" @onclick="CloseEditor">Cancel·la</button>
-                    <button class="btn-primary" @onclick="() => SaveEditorAsync(ei)">Desa</button>
                 </div>
             </div>
         </div>
@@ -74,40 +80,46 @@
             <div class="sheet" @onclick:stopPropagation="true" role="dialog" aria-label="Menú">
                 <h2>Partit</h2>
 
-                <div class="field">
-                    <span>Període · partit de @Game.FormatLabel</span>
-                    <div class="stepper">
-                        <button class="step" @onclick="() => Game.ChangePeriodAsync(-1)" aria-label="Període anterior">−</button>
-                        <output>@Game.PeriodLabel</output>
-                        <button class="step" @onclick="() => Game.ChangePeriodAsync(1)" aria-label="Període següent">+</button>
-                    </div>
-                </div>
-
-                <button class="menu-item" @onclick="SwapAsync">⇄ Intercanvia costats</button>
-
-                @if (!confirmReset)
-                {
-                    <button class="menu-item danger" @onclick="() => confirmReset = true">Nou partit</button>
-                }
-                else
-                {
-                    <div class="field new-game">
-                        <span>Nou partit · tot tornarà a 0</span>
-                        <div class="format-choice">
-                            @foreach (var p in new[] { 4, 8 })
-                            {
-                                <button class="format @(p == Game.State.Periods ? "current" : "")" @onclick="() => NewGameAsync(p)">
-                                    <strong>@p parts</strong>
-                                    <small>@(p == 4 ? "Quarts (Q1–Q4)" : "Premini (P1–P8)")</small>
-                                </button>
-                            }
+                <div class="sheet-cols">
+                    <div class="col">
+                        <div class="field">
+                            <span>Període · partit de @Game.FormatLabel</span>
+                            <div class="stepper">
+                                <button class="step" @onclick="() => Game.ChangePeriodAsync(-1)" aria-label="Període anterior">−</button>
+                                <output>@Game.PeriodLabel</output>
+                                <button class="step" @onclick="() => Game.ChangePeriodAsync(1)" aria-label="Període següent">+</button>
+                            </div>
                         </div>
-                        <button class="btn-ghost cancel-new" @onclick="() => confirmReset = false">Cancel·la</button>
-                    </div>
-                }
 
-                <div class="sheet-actions">
-                    <button class="btn-primary" @onclick="CloseMenu">Fet</button>
+                        <button class="menu-item" @onclick="SwapAsync">⇄ Intercanvia costats</button>
+                    </div>
+
+                    <div class="col">
+                        @if (!confirmReset)
+                        {
+                            <button class="menu-item danger" @onclick="() => confirmReset = true">Nou partit</button>
+                        }
+                        else
+                        {
+                            <div class="field new-game">
+                                <span>Nou partit · tot a 0</span>
+                                <div class="format-choice">
+                                    @foreach (var p in new[] { 4, 8 })
+                                    {
+                                        <button class="format @(p == Game.State.Periods ? "current" : "")" @onclick="() => NewGameAsync(p)">
+                                            <strong>@p parts</strong>
+                                            <small>@(p == 4 ? "Quarts (Q1–Q4)" : "Premini (P1–P8)")</small>
+                                        </button>
+                                    }
+                                </div>
+                                <button class="btn-ghost cancel-new" @onclick="() => confirmReset = false">Cancel·la</button>
+                            </div>
+                        }
+
+                        <div class="sheet-actions">
+                            <button class="btn-primary" @onclick="CloseMenu">Fet</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
